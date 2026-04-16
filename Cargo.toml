@@ -1,0 +1,11 @@
+[package]
+name = "roadfighter-by-hermes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+minifb = "0.27"
+rand = "0.8"
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,23 @@
+# Rust 编译输出
+/target/
+**/*.rs.bk
+
+# IDE 和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志和临时文件
+*.log
+*.tmp
+
+# 敏感信息
+.env
+*_token*
+*_key*
