@@ -3,9 +3,9 @@ use rand::Rng;
 use std::env;
 use std::process::Command;
 
-const SCREEN_WIDTH: usize = 800;
-const SCREEN_HEIGHT: usize = 600;
-const ROAD_WIDTH: f32 = 360.0;
+const SCREEN_WIDTH: usize = 1024;
+const SCREEN_HEIGHT: usize = 768;
+const ROAD_WIDTH: f32 = 400.0;
 const LANE_COUNT: usize = 4;
 
 fn main() {
@@ -430,28 +430,30 @@ impl Game {
         }
     }
 
-    fn draw_title(&self, buffer: &mut Vec<u32>) {
-        // 背景
-        draw_rect(buffer, 150.0, 80.0, 500.0, 440.0, 0x1A1A2E);
-        draw_rect(buffer, 160.0, 90.0, 480.0, 420.0, 0x0F0F1A);
+ fn draw_title(&self, buffer: &mut Vec<u32>) {
+ // 背景 - 居中显示
+ let box_x = (SCREEN_WIDTH as f32 - 540.0) / 2.0;
+ let box_y = 60.0;
+ draw_rect(buffer, box_x, box_y, 540.0, 520.0, 0x1A1A2E);
+ draw_rect(buffer, box_x + 10.0, box_y + 10.0, 520.0, 500.0, 0x0F0F1A);
 
-        // 标题
-        draw_text(buffer, "ROAD FIGHTER", 220, 130, 3, RED);
-        draw_text(buffer, "FC Racing Game", 280, 200, 2, YELLOW);
+ // 标题
+ draw_text(buffer, "ROAD FIGHTER", (SCREEN_WIDTH / 2 - 180) as i32, 110, 3, RED);
+ draw_text(buffer, "FC Racing Game", (SCREEN_WIDTH / 2 - 100) as i32, 180, 2, YELLOW);
 
-        // 示例赛车
-        draw_car(buffer, SCREEN_WIDTH as f32 / 2.0 - 18.0, 260.0, BLUE, true);
+ // 示例赛车 - 居中
+ draw_car(buffer, SCREEN_WIDTH as f32 / 2.0 - 18.0, 240.0, BLUE, true);
 
-        // 操作说明
-        draw_text(buffer, "Controls:", 340, 360, 1, WHITE);
-        draw_text(buffer, "Arrow Keys / WASD - Move", 250, 400, 1, 0xAAAAAA);
-        draw_text(buffer, "Collect Green Fuel", 290, 430, 1, GREEN);
+ // 操作说明
+ draw_text(buffer, "Controls:", (SCREEN_WIDTH / 2 - 50) as i32, 350, 1, WHITE);
+ draw_text(buffer, "Arrow Keys / WASD - Move", (SCREEN_WIDTH / 2 - 130) as i32, 390, 1, 0xAAAAAA);
+ draw_text(buffer, "Collect Green Fuel", (SCREEN_WIDTH / 2 - 90) as i32, 420, 1, GREEN);
 
-        // 开始提示
-        if (self.frame_count / 30) % 2 == 0 {
-            draw_text(buffer, "Press SPACE to Start", 270, 480, 2, GREEN);
-        }
-    }
+ // 开始提示
+ if (self.frame_count / 30) % 2 == 0 {
+     draw_text(buffer, "Press SPACE to Start", (SCREEN_WIDTH / 2 - 120) as i32, 500, 2, GREEN);
+ }
+ }
 
     fn draw_game(&self, buffer: &mut Vec<u32>) {
         // 燃料补给
@@ -472,47 +474,52 @@ impl Game {
         self.draw_ui(buffer);
     }
 
-    fn draw_game_over(&self, buffer: &mut Vec<u32>) {
-        self.draw_game(buffer);
+ fn draw_game_over(&self, buffer: &mut Vec<u32>) {
+ self.draw_game(buffer);
 
-        // 半透明覆盖
-        draw_rect(buffer, 0.0, 0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0x000000AA);
-        
-        // 框
-        draw_rect(buffer, 150.0, 150.0, 500.0, 300.0, 0x1A1A2E);
-        draw_rect(buffer, 160.0, 160.0, 480.0, 280.0, BLACK);
+ // 半透明覆盖
+ draw_rect(buffer, 0.0, 0.0, SCREEN_WIDTH as f32, SCREEN_HEIGHT as f32, 0x000000AA);
+ 
+ // 框 - 居中
+ let box_x = (SCREEN_WIDTH as f32 - 540.0) / 2.0;
+ let box_y = 150.0;
+ draw_rect(buffer, box_x, box_y, 540.0, 340.0, 0x1A1A2E);
+ draw_rect(buffer, box_x + 10.0, box_y + 10.0, 520.0, 320.0, BLACK);
 
-        draw_text(buffer, "GAME OVER", 280, 190, 3, RED);
-        draw_text(buffer, &format!("Score: {}", self.player.score), 300, 280, 2, YELLOW);
-        draw_text(buffer, &format!("High Score: {}", self.high_score), 280, 320, 2, GOLD);
-        draw_text(buffer, &format!("Level: {}", self.level), 330, 360, 1, WHITE);
+ draw_text(buffer, "GAME OVER", (SCREEN_WIDTH / 2 - 120) as i32, 200, 3, RED);
+ draw_text(buffer, &format!("Score: {}", self.player.score), (SCREEN_WIDTH / 2 - 80) as i32, 290, 2, YELLOW);
+ draw_text(buffer, &format!("High Score: {}", self.high_score), (SCREEN_WIDTH / 2 - 100) as i32, 340, 2, GOLD);
+ draw_text(buffer, &format!("Level: {}", self.level), (SCREEN_WIDTH / 2 - 40) as i32, 390, 1, WHITE);
 
-        if (self.frame_count / 30) % 2 == 0 {
-            draw_text(buffer, "Press SPACE", 310, 410, 2, GREEN);
-        }
-    }
+ if (self.frame_count / 30) % 2 == 0 {
+     draw_text(buffer, "Press SPACE", (SCREEN_WIDTH / 2 - 70) as i32, 440, 2, GREEN);
+ }
+ }
 
-    fn draw_ui(&self, buffer: &mut Vec<u32>) {
-        // 燃料条
-        draw_rect(buffer, 10.0, 10.0, 124.0, 24.0, BLACK);
-        draw_rect(buffer, 12.0, 12.0, 120.0, 20.0, DARK_GRAY);
-        
-        let fuel_width = (self.player.fuel.max(0.0) / 100.0) * 116.0;
-        let fuel_color = if self.player.fuel > 30.0 { GREEN } else { RED };
-        draw_rect(buffer, 14.0, 14.0, fuel_width, 16.0, fuel_color);
+ fn draw_ui(&self, buffer: &mut Vec<u32>) {
+ // 燃料条 - 左上角
+ draw_rect(buffer, 10.0, 10.0, 124.0, 24.0, BLACK);
+ draw_rect(buffer, 12.0, 12.0, 120.0, 20.0, DARK_GRAY);
+ 
+ let fuel_width = (self.player.fuel.max(0.0) / 100.0) * 116.0;
+ let fuel_color = if self.player.fuel > 30.0 { GREEN } else { RED };
+ draw_rect(buffer, 14.0, 14.0, fuel_width, 16.0, fuel_color);
 
-        draw_text(buffer, "FUEL", 140, 24, 1, WHITE);
-        
-        draw_text(buffer, &format!("SCORE:{}", self.player.score), 10, 50, 1, YELLOW);
-        draw_text(buffer, &format!("LV:{}", self.level), 10, 74, 1, WHITE);
-        draw_text(buffer, &format!("HIGH:{}", self.high_score), SCREEN_WIDTH as i32 - 130, 24, 1, GOLD);
+ draw_text(buffer, "FUEL", 140, 24, 1, WHITE);
+ 
+ // 分数和等级
+ draw_text(buffer, &format!("SCORE:{}", self.player.score), 10, 50, 1, YELLOW);
+ draw_text(buffer, &format!("LV:{}", self.level), 10, 74, 1, WHITE);
+ 
+ // 高分 - 右上角
+ draw_text(buffer, &format!("HIGH:{}", self.high_score), SCREEN_WIDTH as i32 - 130, 24, 1, GOLD);
 
-        // 生命
-        draw_text(buffer, "LIFE:", 10, 98, 1, WHITE);
-        for i in 0..self.player.lives {
-            draw_mini_car(buffer, 70 + i * 30, 85, BLUE);
-        }
-    }
+ // 生命值
+ draw_text(buffer, "LIFE:", 10, 98, 1, WHITE);
+ for i in 0..self.player.lives {
+     draw_mini_car(buffer, 70 + i * 30, 85, BLUE);
+ }
+ }
 }
 
 fn draw_rect(buffer: &mut Vec<u32>, x: f32, y: f32, w: f32, h: f32, color: u32) {
