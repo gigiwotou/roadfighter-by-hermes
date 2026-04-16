@@ -39,13 +39,18 @@ fn main() {
 
     let mut game = Game::new();
 
-    while window.is_open() && !window.is_key_down(Key::Escape) {
-        game.update(&window);
-        
-        let mut buffer = vec![DARK_GRAY; SCREEN_WIDTH * SCREEN_HEIGHT];
-        game.draw(&mut buffer);
-        window.update_with_buffer(&buffer, SCREEN_WIDTH, SCREEN_HEIGHT).unwrap();
-    }
+ while window.is_open() && !window.is_key_down(Key::Escape) {
+ game.update(&window);
+ 
+ let mut buffer = vec![DARK_GRAY; SCREEN_WIDTH * SCREEN_HEIGHT];
+ game.draw(&mut buffer);
+ 
+ // 安全更新缓冲区
+ if let Err(e) = window.update_with_buffer(&buffer, SCREEN_WIDTH, SCREEN_HEIGHT) {
+     eprintln!("Buffer update error: {}", e);
+     break;
+ }
+ }
 }
 
 
@@ -91,15 +96,7 @@ fn get_screen_size() -> (u32, u32) {
             }
         }
     }
-    (1920, 1080)
-}
-
-fn get_screen_width() -> u32 {
-    get_screen_size().0
-}
-
-fn get_screen_height() -> u32 {
-    get_screen_size().1
+ (1920, 1080)
 }
 
 // 颜色定义
@@ -117,20 +114,7 @@ const PURPLE: u32 = 0x800080;
 const GOLD: u32 = 0xFFD700;
 const SKY_BLUE: u32 = 0x87CEEB;
 
-// 简单的5x5位图字体 (大写字母和数字)
-const FONT_DATA: &str = "
-###..#...###..###..#.#..###..####..##..#####....#...###..###.
-#.#..##....#....#..#.#..#....#......#..#........#.#..#..#..#
-#.#..#.#...#...#...###..###..###....#..###......#...###..###.
-#.#..##....#..#....#.#....#..#......#..#........#...#..#....
-###..#...###..###..#.#..###..####.###..###......#...###..###.
-#.................................................................
-#.#..#.#..###...##..###..##...##..####..#.#..#.#..#..###..###.
-#.#..#.#....#..#..#.#....#..#.#....#....##.#..#.#..#...#....#.
-####..#.#...#..#....###..#....#....###...#.#..#.#..#...#....#.
-#.#..#.#...#...#..#.#....#..#.#....#.....#.#..#.#..#...#....#.
-#.#..###..###...##..###..##...##..####..#.#...#...#...###..###.
-";
+
 
 #[derive(Clone, Copy, PartialEq)]
 enum GameState {
@@ -347,18 +331,19 @@ impl Game {
             self.fuel_consumption_timer = 0.0;
         }
 
-        if self.player.fuel <= 0.0 {
-            self.player.lives -= 1;
-            if self.player.lives <= 0 {
-                if self.player.score > self.high_score {
-                    self.high_score = self.player.score;
-                }
-                self.state = GameState::GameOver;
-            } else {
-                self.player.fuel = 50.0;
-                self.player.x = SCREEN_WIDTH as f32 / 2.0 - 18.0;
-            }
-        }
+ if self.player.fuel <= 0.0 {
+ self.player.fuel = 0.0; // 确保 fuel 不为负
+ self.player.lives -= 1;
+ if self.player.lives <= 0 {
+     if self.player.score > self.high_score {
+         self.high_score = self.player.score;
+     }
+     self.state = GameState::GameOver;
+ } else {
+     self.player.fuel = 50.0;
+     self.player.x = SCREEN_WIDTH as f32 / 2.0 - 18.0;
+ }
+ }
 
         self.player.score += 1;
 
@@ -394,14 +379,19 @@ impl Game {
         self.fuels.push(Fuel { x, y: -18.0 });
     }
 
-    fn draw(&self, buffer: &mut Vec<u32>) {
-        // 清空
-        for pixel in buffer.iter_mut() {
-            *pixel = DARK_GRAY;
-        }
+ fn draw(&self, buffer: &mut Vec<u32>) {
+ // 安全检查
+ if buffer.len() != SCREEN_WIDTH * SCREEN_HEIGHT {
+     return;
+ }
 
-        let road_left_int = self.road_left as usize;
-        let road_right_int = self.road_right as usize;
+ // 清空
+ for pixel in buffer.iter_mut() {
+     *pixel = DARK_GRAY;
+ }
+
+ let road_left_int = self.road_left.max(0.0).min(SCREEN_WIDTH as f32) as usize;
+ let road_right_int = self.road_right.max(0.0).min(SCREEN_WIDTH as f32) as usize;
 
         // 草地
         for y in 0..SCREEN_HEIGHT {
@@ -507,7 +497,7 @@ impl Game {
         draw_rect(buffer, 10.0, 10.0, 124.0, 24.0, BLACK);
         draw_rect(buffer, 12.0, 12.0, 120.0, 20.0, DARK_GRAY);
         
-        let fuel_width = (self.player.fuel / 100.0) * 116.0;
+        let fuel_width = (self.player.fuel.max(0.0) / 100.0) * 116.0;
         let fuel_color = if self.player.fuel > 30.0 { GREEN } else { RED };
         draw_rect(buffer, 14.0, 14.0, fuel_width, 16.0, fuel_color);
 
